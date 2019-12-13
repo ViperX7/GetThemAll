@@ -55,14 +55,18 @@ def genWriteup(name, nc='', files='', desc='', category='', pts='', links='', ta
     Readme += '> ' + desc + '  \n'
 
     if nc:
-        Readme += '> * Connect using: nc' + nc[0] + ' ' + nc[1] + '\n'
+        for conn in nc:
+            Readme += '> **Connect using: nc ' + \
+                conn[0] + ' ' + conn[1] + '**  \n'
     if links:
+        Readme += '> ##### Links  '
         for link in links:
             Readme += '> * [*' + link + '*](' + link + ')\n'
     if files:
+        Readme += '> ##### Files  '
         for file in files:
             filename = file.split('/')[-1].split('?')[0]
-            Readme += '> * [*' + filename + '*](./' + filename + ')\n'
+            Readme += '> * [**' + filename + '**](./' + filename + ')\n'
     return Readme
 
 
@@ -146,7 +150,7 @@ if __name__ == "__main__":
         conn = []
         for connection in connections:
             conn.append(
-                connection.strip(' ').replace('nc', '').replace(':', ' ').split(' '))
+                connection.replace('nc', '').strip(' ').replace(':', ' ').split(' '))
     else:
         conn = ''
     if args.files:
