@@ -62,7 +62,7 @@ def genWriteup(name, nc='', files='', desc='', category='', pts='', links='', ta
     if files:
         for file in files:
             filename = file.split('/')[-1].split('?')[0]
-            Readme += '> * [*' + filename + '*](./' + file + ')\n'
+            Readme += '> * [*' + filename + '*](./' + filename + ')\n'
     return Readme
 
 
