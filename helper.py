@@ -1,6 +1,5 @@
 #!/bin/python3
 import argparse
-import stat
 import os
 
 
@@ -34,14 +33,27 @@ def urlDetect(str):
 def genWriteup(name, nc='', files='', desc='', category='', pts='', links='', tags=''):
     Readme = ""
     Readme += '# ' + name + '\n'
+
+    # Category and points Handelling
+    if category == '':
+        category = '--category--'
+    if pts == '':
+        pts = '---'
     Readme += '> ' + str(category) + ' | ' + str(pts) + ' points\n'
     Readme += '--------------------' + '\n\n'
+
     if tags:
         for tag in tags:
             Readme += 'Link + ' + tag + '  '
         Readme += '\n\n'
     Readme += '## Problem Statement\n'
+
+    # Description Handelling
+    while desc.find('\n\n') != -1:
+        desc = desc.replace('\n\n', '\n')
+    desc = desc.strip('\n').replace('\n', '  \n> ')
     Readme += '> ' + desc + '  \n'
+
     if nc:
         Readme += '> * Connect using: nc' + nc[0] + ' ' + nc[1] + '\n'
     if links:
