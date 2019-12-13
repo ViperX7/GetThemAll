@@ -19,7 +19,7 @@ def download(files):
     import subprocess
     files = sanitise(files)
     for link in files:
-        filename = link.split('?')[0]
+        filename = link.split('/')[-1].split('?')[0]
         subprocess.call("wget --no-check-certificate -O" +
                         filename + ' ' + link, shell=True)
 
@@ -49,11 +49,12 @@ def genWriteup(name, nc='', files='', desc='', category='', pts='', links='', ta
             Readme += '> * [*' + link + '*](' + link + ')\n'
     if files:
         for file in files:
-            Readme += '> * [*' + file + '*](./' + file + ')\n'
+            filename = file.split('/')[-1].split('?')[0]
+            Readme += '> * [*' + filename + '*](./' + file + ')\n'
     return Readme
 
 
-def prepare(name, category='.', files='', conn=''):
+def prepare(name, Readme, category='.', files='', conn=''):
     base_dir = os.getcwd()
     if category:
         if category not in os.listdir():
@@ -73,15 +74,22 @@ def prepare(name, category='.', files='', conn=''):
         for conn in conns:
             ip, port = conn
             conn_scpt += 'nc ' + ip + ' ' + port + '\n'
+        # Creating a connection script
         file = open('connect.sh', 'w')
         file.write(conn_scpt)
         file.close()
         os.system("chmod +x connect.sh")
 
+    # Creating a get flag script
     file = open('get_flag.sh', 'w')
     file.write('#!/bin/sh\n')
     file.close()
     os.system("chmod +x get_flag.sh")
+
+    # Creating A readme script
+    file = open('README.md', 'w')
+    file.write(Readme)
+    file.close()
 
     download(files)
 
@@ -113,9 +121,13 @@ if __name__ == "__main__":
     if args.desc:
         desc = args.desc
         urls = urlDetect(desc)
-        for url in urls:
-            if url not in args.links:
-                args.link += ',' + url
+        if urls:
+            for url in urls:
+                if args.links:
+                    if url not in args.links:
+                        args.link += ',' + url
+                else:
+                    args.link = url
 
     if args.conn:
         connections = args.conn.split(',')
@@ -146,4 +158,5 @@ if __name__ == "__main__":
     else:
         tags = ''
 
-    prepare(name, category, files, conn)
+    Readme = genWriteup(name, conn, files, desc, category, points, links, tags)
+    prepare(name, Readme, category, files, conn)
