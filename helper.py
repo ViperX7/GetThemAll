@@ -76,7 +76,7 @@ def prepare(name, Readme, category='.', files='', conn=''):
         if category not in os.listdir():
             os.mkdir(category)
         os.chdir(category)
-    name = name.replace(' ', '_')
+    name = name.replace(' ', '_').lower()
     banned_chars = ['/']
     for char in banned_chars:
         name.replace(char, '-')
