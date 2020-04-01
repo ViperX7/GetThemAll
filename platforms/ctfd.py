@@ -174,6 +174,88 @@ class CTFd:
                 self.__challenges.add(prblm)
         return self.__challenges
 
+class users:
+    def __init__(self, session, url):
+        self.__session = session
+        self.__url = url
+        self.__ulist = []
+
+    def add(self, user):
+        if type(user) == dict or type(user) == type(1):
+            new_user = user(user, self.__session, self.__url)
+        elif type(user) == user:
+            new_user = user
+        self.__ulist.append(new_user)
+
+    def __getitem__(self, key):
+        return self.__ulist[key]
+
+    def __str__(self):
+        out = []
+        for x in self.__ulist:
+            out.append(x.name)
+        return str(out)
+
+    def find(self, search):
+        output = users(self.__session, self.__url)
+        for user in self.__ulist:
+            if search in user.name:
+                output.add(user)
+            elif search in user.affiliation:
+                output.add(user)
+            elif search in user.website:
+                output.add(user)
+            elif search in country:
+                output.add(user)
+        return output
+
+
+class user:
+    def __init__(self, prop, session, url):
+        self.__session = session
+        self.__url = url
+        if type(prop) != type(1):
+            self.__id = prop["id"]
+            self.name = prop["name"]
+            self.website = prop["website"]
+            self.affiliation = prop["affiliation"]
+            self.country = prop["country"]
+
+        else:
+            self.__id = prop
+            self.name = None
+            self.website = None
+            self.affiliation = None
+            self.country = None
+
+
+        self.isloaded = False
+
+    def load(self):
+        resp = self.__session.get(self.url+"/api/v1/users/"+self.__id)
+        prop = resp.json()
+        self.name = prop["name"]
+        self.website = prop["website"]
+        self.affiliation = prop["affiliation"]
+        self.country = prop["country"]
+
+        self.score = prop["score"]
+        self.place = prop["place"]
+        self.isloaded = True
+
+    def __str__(self):
+        return str(self.name)
+
+    def view(self):
+        if self.isloaded == False:
+            self.load()
+        print("Username: " + self.name)
+        print("Score: " + str(self.score) + "@" + self.place)
+        if self.affiliation:
+            print("Affiliation: " + self.affiliation + ", " + self.country)
+        if self.website:
+            print("Website:" + self.website)
+
 
 class challenges:
     def __init__(self, session, url):
@@ -213,13 +295,16 @@ class challenge:
     def __init__(self, prop, session, url):
         self.__sess = session
         self.__url = url
-        self.__id = prop["id"]
-        self.category = prop["category"]
-        self.name = prop["name"]
-        self.value = prop["value"]
-        self.tags = prop['tags']
-        self.type = prop["type"]
-        self.__loaded = False
+        if type(prop) != type(1):
+            self.__id = prop["id"]
+            self.category = prop["category"]
+            self.name = prop["name"]
+            self.value = prop["value"]
+            self.tags = prop['tags']
+            self.type = prop["type"]
+        else:
+            self.__id = prop
+        self.__isloaded = False
 
     def __str__(self):
         return self.name
@@ -238,16 +323,18 @@ class challenge:
         self.description = chall["description"]
         self.solves = chall["solves"]
         self.hints = chall["hints"]
-        self.__loaded = True
+        self.__isloaded = True
 
     def view(self):
         print("=> " + self.name + "\t\t" + "(" + self.category + ")")
-        if self.__loaded:
-            print("Description:\n\t\t" + self.description)
+        if self.__loaded == False:
+            self.load()
+        print("Description:\n\t\t" + self.description)
+        if len(self.files) > 0:
             print("Downloads:" + str(len(self.files)))
-            print("Solves: " + str(self.solves))
-            if self.hints:
-                print("hint available")
+        print("Solves: " + str(self.solves))
+        if self.hints:
+            print("hint available")
         for t in self.tags:
             print(t, end=", ")
 
