@@ -55,6 +55,7 @@ class CTFd:
             print("\tAlso check weater connection is available")
             print("[X] "+resp.status_code)
             exit(1)
+        self.__challenges = None
 
     def info(self, context=None):
         s = self.session
@@ -140,7 +141,7 @@ class CTFd:
     def sync(self):
         s = self.session
         resp = s.get(self.url+"/api/v1/users/me")
-        print(resp.text)
+        # print(resp.text)
         data = resp.json()['data']
         self.username = data['name']
         self.email = data['email']
@@ -164,20 +165,100 @@ class CTFd:
             print('done')
 
     def challenges(self):
-        s = self.session
-        resp = s.get(self.url+"/api/v1/challenges")
-        challs = resp.json()["data"]
-        for chall in challs:
-            for x in chall.keys():
-                if chall[x] != None:
-                    print(x + " : " + str(chall[x]))
-            print()
+        if self.__challenges == None:
+            s = self.session
+            self.__challenges = challenges(s, self.url)
+            resp = s.get(self.url+"/api/v1/challenges")
+            prblms = resp.json()["data"]
+            for prblm in prblms:
+                self.__challenges.add(prblm)
+        return self.__challenges
+
+
+class challenges:
+    def __init__(self, session, url):
+        self.__sess = session
+        self.__url = url
+        self.__clist = []
+        self.__categories = []
+
+    def __getitem__(self, key):
+        return self.__clist[key]
+
+    def __str__(self):
+        out = []
+        for x in self.__clist:
+            out.append(x.name)
+        return str(out)
+
+    def add(self, chall):
+        new_chall = challenge(chall, self.__sess, self.__url)
+        self.__clist.append(new_chall)
+        if new_chall.category not in self.__categories:
+            self.__categories.append(new_chall.category)
+
+    def category(self, search=None):
+        if search == None:
+            return self.__categories
+        else:
+            c_in_cat = challenges(self.__sess, self.__url)
+            for challenge in self.__clist:
+                if search in challenge.category:
+                    c_in_cat.add(challenge)
+            return c_in_cat
+
+
+class challenge:
+
+    def __init__(self, prop, session, url):
+        self.__sess = session
+        self.__url = url
+        self.__id = prop["id"]
+        self.category = prop["category"]
+        self.name = prop["name"]
+        self.value = prop["value"]
+        self.tags = prop['tags']
+        self.type = prop["type"]
+        self.__loaded = False
+
+    def __str__(self):
+        return self.name
+
+    def __getitem__(self,key):
+        return getattr(self,key)
+
+    def load(self):
+        resp = self.__sess.get(self.__url+"/api/v1/challenges/"+str(self.__id))
+        chall = resp.json()["data"]
+        self.category = chall["category"]
+        self.name = chall["name"]
+        self.tags = chall["tags"]
+        self.value = chall["value"]
+        self.files = chall["files"]
+        self.description = chall["description"]
+        self.solves = chall["solves"]
+        self.hints = chall["hints"]
+        self.__loaded = True
+
+    def view(self):
+        print("=> " + self.name + "\t\t" + "(" + self.category + ")")
+        if self.__loaded:
+            print("Description:\n\t\t" + self.description)
+            print("Downloads:" + str(len(self.files)))
+            print("Solves: " + str(self.solves))
+            if self.hints:
+                print("hint available")
+        for t in self.tags:
+            print(t, end=", ")
+
+    def keys(self):
+        return ["name", "category", "description", "tags", "value", "solves"]
 
 
 sectf = CTFd(URL)
 sectf.creds({"user": username, "email": email, "pass": password})
 sectf.auth()
-sectf.challenges()
+sectf.challenges()[1].view()
 
 # sectf.users()
 # print(sectf.email)
