@@ -15,23 +15,6 @@ class ConnError(Exception):
     pass
 
 
-# class user:
-#     uid = None
-#     name = None
-#     email = None
-#     country = None
-#     affiliation = None
-#     website = None
-#     score = None
-#     place = None
-#     extras = None
-#
-#     def show(self):
-#         print("User:  " + self.name)
-#         print("Rank: " + self.place + " with " + self.score + "pts")
-#         print("Affiliation: " + self.affiliation + ", " + self.country)
-#
-
 class CTFd:
     def __init__(self, url, creds={}):
         # Basic Variables
@@ -56,6 +39,7 @@ class CTFd:
             print("[X] "+resp.status_code)
             exit(1)
         self.__challenges = None
+        self.__users = None
 
     def info(self, context=None):
         s = self.session
@@ -147,32 +131,23 @@ class CTFd:
         self.email = data['email']
 
     def users(self, search=None):
-        s = self.session
-        resp = s.get(self.url + "/api/v1/users")
-        users = resp.json()['data']
-        if not search:
-            print("====Data===\n\n")
-            for user in users:
-                for x in user:
-                    if user[x]:
-                        print("  [>] " + x + " : " + str(user[x]))
-                print()
-        else:
-            for user in users:
-                for x in user:
-                    if str(search) in str(user[x]):
-                        print(user)
-            print('done')
+        if self.__users == None:
+            resp = self.session.get(self.url + "/api/v1/users")
+            usrs = resp.json()['data']
+            self.__users = users(self.session, url)
+            for user in usrs:
+                self.__users.add(user)
+        return self.__users
 
     def challenges(self):
         if self.__challenges == None:
-            s = self.session
-            self.__challenges = challenges(s, self.url)
-            resp = s.get(self.url+"/api/v1/challenges")
+            self.__challenges = challenges(self.session, self.url)
+            resp = self.session.get(self.url+"/api/v1/challenges")
             prblms = resp.json()["data"]
             for prblm in prblms:
                 self.__challenges.add(prblm)
         return self.__challenges
+
 
 class users:
     def __init__(self, session, url):
@@ -227,7 +202,6 @@ class user:
             self.website = None
             self.affiliation = None
             self.country = None
-
 
         self.isloaded = False
 
@@ -295,7 +269,7 @@ class challenge:
     def __init__(self, prop, session, url):
         self.__sess = session
         self.__url = url
-        if type(prop) != type(1):
+        if type(prop) != int:
             self.__id = prop["id"]
             self.category = prop["category"]
             self.name = prop["name"]
@@ -309,8 +283,8 @@ class challenge:
     def __str__(self):
         return self.name
 
-    def __getitem__(self,key):
-        return getattr(self,key)
+    def __getitem__(self, key):
+        return getattr(self, key)
 
     def load(self):
         resp = self.__sess.get(self.__url+"/api/v1/challenges/"+str(self.__id))
