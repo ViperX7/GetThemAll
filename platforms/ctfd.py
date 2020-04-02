@@ -314,8 +314,8 @@ class team:
         self.affiliation = prop["affiliation"]
         self.country = prop["country"]
         self.members = users(self.__session, self.__url)
-        for x in prop["members"].keys():
-            self.members.add(prop["members"][x])
+        for x in prop["members"]:
+            self.members.add(x)
         self.captain = user(prop["captain_id"], self.__session, self.__url)
 
         self.score = prop["score"]
@@ -331,7 +331,7 @@ class team:
         if self.isloaded == False:
             self.load()
         print("Team: " + self.name)
-        print("Score: " + str(self.score) + "pts @ " + self.place)
+        print("Score: " + str(self.score) + "pts @ " + str(self.place))
         if self.affiliation:
             print("Affiliation: " + self.affiliation + ", " + self.country)
         if self.website:
@@ -432,8 +432,8 @@ class challenge:
 sectf = CTFd(URL)
 sectf.creds({"user": username, "email": email, "pass": password})
 sectf.auth()
-print(sectf.teams()[1].view())
-print(sectf.teams()["YESS"].view())
+print()
+sectf.teams()[1].view()
 
 # sectf.users()
 # print(sectf.email)
