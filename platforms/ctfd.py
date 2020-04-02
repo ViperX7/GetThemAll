@@ -40,6 +40,8 @@ class CTFd:
             exit(1)
         self.__challenges = None
         self.__users = None
+        self.__teams = None
+        self.__scoreboard = None
 
     def info(self, context=None):
         s = self.session
@@ -134,7 +136,7 @@ class CTFd:
         if self.__users == None:
             resp = self.session.get(self.url + "/api/v1/users")
             usrs = resp.json()['data']
-            self.__users = users(self.session, url)
+            self.__users = users(self.session, self.url)
             for user in usrs:
                 self.__users.add(user)
         return self.__users
@@ -155,11 +157,11 @@ class users:
         self.__url = url
         self.__ulist = []
 
-    def add(self, user):
-        if type(user) == dict or type(user) == type(1):
-            new_user = user(user, self.__session, self.__url)
-        elif type(user) == user:
-            new_user = user
+    def add(self, usr):
+        if type(usr) == dict or type(usr) == int:
+            new_user = user(usr, self.__session, self.__url)
+        elif type(usr) == user:
+            new_user = usr
         self.__ulist.append(new_user)
 
     def __getitem__(self, key):
@@ -174,13 +176,13 @@ class users:
     def find(self, search):
         output = users(self.__session, self.__url)
         for user in self.__ulist:
-            if search in user.name:
+            if search.lower() in user.name.lower():
                 output.add(user)
-            elif search in user.affiliation:
+            elif user.affiliation and search.lower() in user.affiliation:
                 output.add(user)
-            elif search in user.website:
+            elif user.website and search.lower() in user.website.lower():
                 output.add(user)
-            elif search in country:
+            elif user.country and search.lower() in user.country.lower():
                 output.add(user)
         return output
 
@@ -189,7 +191,7 @@ class user:
     def __init__(self, prop, session, url):
         self.__session = session
         self.__url = url
-        if type(prop) != type(1):
+        if type(prop) != int:
             self.__id = prop["id"]
             self.name = prop["name"]
             self.website = prop["website"]
@@ -206,8 +208,8 @@ class user:
         self.isloaded = False
 
     def load(self):
-        resp = self.__session.get(self.url+"/api/v1/users/"+self.__id)
-        prop = resp.json()
+        resp = self.__session.get(self.__url+"/api/v1/users/"+str(self.__id))
+        prop = resp.json()["data"]
         self.name = prop["name"]
         self.website = prop["website"]
         self.affiliation = prop["affiliation"]
@@ -224,7 +226,7 @@ class user:
         if self.isloaded == False:
             self.load()
         print("Username: " + self.name)
-        print("Score: " + str(self.score) + "@" + self.place)
+        print("Score: " + str(self.score) + "pts @ " + self.place)
         if self.affiliation:
             print("Affiliation: " + self.affiliation + ", " + self.country)
         if self.website:
@@ -319,7 +321,7 @@ class challenge:
 sectf = CTFd(URL)
 sectf.creds({"user": username, "email": email, "pass": password})
 sectf.auth()
-sectf.challenges()[1].view()
+print(sectf.users().find("spiritx"))
 
 # sectf.users()
 # print(sectf.email)
