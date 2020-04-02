@@ -150,6 +150,15 @@ class CTFd:
                 self.__challenges.add(prblm)
         return self.__challenges
 
+    def teams(self):
+        if self.__teams == None:
+            self.__teams = teams(self.session, self.url)
+            resp = self.session.get(self.url+"/api/v1/teams")
+            tems = resp.json()["data"]
+            for tem in tems:
+                self.__teams.add(tem)
+        return self.__teams
+
 
 class users:
     def __init__(self, session, url):
@@ -220,6 +229,8 @@ class user:
         self.isloaded = True
 
     def __str__(self):
+        if self.name == None:
+            self.load()
         return str(self.name)
 
     def view(self):
@@ -231,6 +242,104 @@ class user:
             print("Affiliation: " + self.affiliation + ", " + self.country)
         if self.website:
             print("Website:" + self.website)
+
+class teams:
+    def __init__(self, session, url):
+        self.__session = session
+        self.__url = url
+        self.__tlist = []
+
+    def add(self, nteam):
+        if type(nteam) == dict or type(nteam) == int:
+            new_team = team(nteam, self.__session, self.__url)
+        elif type(nteam) == team:
+            new_team = nteam
+        self.__tlist.append(new_team)
+
+    def __getitem__(self, key):
+        if type(key) == int:
+            result = self.__tlist[key]
+        if type(key) == str:
+            for x in self.__tlist:
+                if key == x.name:
+                    result = x
+        return result
+
+    def __str__(self):
+        out = []
+        for x in self.__tlist:
+            out.append(x.name)
+        return str(out)
+
+    def find(self, search):
+        output = users(self.__session, self.__url)
+        for user in self.__tlist:
+            if search.lower() in user.name.lower():
+                output.add(user)
+            elif user.affiliation and search.lower() in user.affiliation:
+                output.add(user)
+            elif user.website and search.lower() in user.website.lower():
+                output.add(user)
+            elif user.country and search.lower() in user.country.lower():
+                output.add(user)
+        return output
+
+
+class team:
+    def __init__(self, prop, session, url):
+        self.__session = session
+        self.__url = url
+        if type(prop) != int:
+            self.__id = prop["id"]
+            self.name = prop["name"]
+            self.website = prop["website"]
+            self.affiliation = prop["affiliation"]
+            self.country = prop["country"]
+            self.captain = user(prop["captain_id"], self.__session, self.__url)
+
+        else:
+            self.__id = prop
+            self.name = None
+            self.website = None
+            self.affiliation = None
+            self.country = None
+
+        self.isloaded = False
+
+    def load(self):
+        resp = self.__session.get(self.__url+"/api/v1/teams/"+str(self.__id))
+        prop = resp.json()["data"]
+        self.name = prop["name"]
+        self.website = prop["website"]
+        self.affiliation = prop["affiliation"]
+        self.country = prop["country"]
+        self.members = users(self.__session, self.__url)
+        for x in prop["members"].keys():
+            self.members.add(prop["members"][x])
+        self.captain = user(prop["captain_id"], self.__session, self.__url)
+
+        self.score = prop["score"]
+        self.place = prop["place"]
+        self.isloaded = True
+
+    def __str__(self):
+        if self.name == None:
+            self.load()
+        return str(self.name)
+
+    def view(self):
+        if self.isloaded == False:
+            self.load()
+        print("Team: " + self.name)
+        print("Score: " + str(self.score) + "pts @ " + self.place)
+        if self.affiliation:
+            print("Affiliation: " + self.affiliation + ", " + self.country)
+        if self.website:
+            print("Website:" + self.website)
+        print("Members: ")
+        for x in self.members:
+            print(x)
+
 
 
 class challenges:
@@ -283,6 +392,8 @@ class challenge:
         self.__isloaded = False
 
     def __str__(self):
+        if self.name == None:
+            self.load()
         return self.name
 
     def __getitem__(self, key):
@@ -321,7 +432,8 @@ class challenge:
 sectf = CTFd(URL)
 sectf.creds({"user": username, "email": email, "pass": password})
 sectf.auth()
-print(sectf.users().find("spiritx"))
+print(sectf.teams()[1].view())
+print(sectf.teams()["YESS"].view())
 
 # sectf.users()
 # print(sectf.email)
