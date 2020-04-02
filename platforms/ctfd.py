@@ -174,7 +174,13 @@ class users:
         self.__ulist.append(new_user)
 
     def __getitem__(self, key):
-        return self.__ulist[key]
+        if type(key) == int:
+            result = self.__ulist[key]
+        if type(key) == str:
+            for x in self.__ulist:
+                if key == x.name:
+                    result = x
+        return result
 
     def __str__(self):
         out = []
@@ -242,6 +248,7 @@ class user:
             print("Affiliation: " + self.affiliation + ", " + self.country)
         if self.website:
             print("Website:" + self.website)
+
 
 class teams:
     def __init__(self, session, url):
@@ -341,7 +348,6 @@ class team:
             print(x)
 
 
-
 class challenges:
     def __init__(self, session, url):
         self.__sess = session
@@ -350,7 +356,13 @@ class challenges:
         self.__categories = []
 
     def __getitem__(self, key):
-        return self.__clist[key]
+        if type(key) == int:
+            result = self.__clist[key]
+        if type(key) == str:
+            for x in self.__clist:
+                if key == x.name:
+                    result = x
+        return result
 
     def __str__(self):
         out = []
@@ -376,7 +388,6 @@ class challenges:
 
 
 class challenge:
-
     def __init__(self, prop, session, url):
         self.__sess = session
         self.__url = url
