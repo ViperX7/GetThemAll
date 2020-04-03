@@ -36,12 +36,13 @@ class CTFd:
             print("\tFailed\r[-]")
             print("[?] Are you sure the URL to the CTF is correct")
             print("\tAlso check weater connection is available")
-            print("[X] "+resp.status_code)
+            print("[X] "+str(resp.status_code))
             exit(1)
         self.__challenges = None
         self.__users = None
         self.__teams = None
         self.__scoreboard = None
+        self.isstarted = None
 
     def info(self, context=None):
         s = self.session
@@ -111,6 +112,7 @@ class CTFd:
 
         print("[*] Authenticating " + self.url, end="")
         resp = s.post(self.url+"/login", data=loginData)
+        self.isstarted = True
         if resp.ok:
             print("\tAuthenticated\r[+]")
         elif resp.status_code == 403:
@@ -120,6 +122,7 @@ class CTFd:
             elif "not started" in resp.text:
                 print("\tAuthenticated\r[+]")
                 print("\t[*] Seems Like you are early CTF not started yet")
+                self.isstarted = False
         else:
             print("\tFailed\r[-]")
             print(resp.status_code)
@@ -152,6 +155,8 @@ class CTFd:
         return self.__users
 
     def challenges(self):
+        if self.isstarted== False:
+            return []
         if self.__challenges == None:
             self.__challenges = challenges(self.session, self.url)
             resp = self.session.get(self.url+"/api/v1/challenges")
@@ -188,9 +193,13 @@ class users:
         if type(key) == int:
             result = self.__ulist[key]
         if type(key) == str:
+            print("[*] Searching..." + str(key), end="")
             for x in self.__ulist:
-                if key == x.name:
+                if key.lower() == x.name.lower():
+                    print("\t\t\t Found\r[+]")
                     result = x
+        if result == None:
+            print("\t\t\t Not Found\r[-]")
         return result
 
     def __str__(self):
@@ -254,7 +263,7 @@ class user:
         if self.isloaded == False:
             self.load()
         print("Username: " + self.name)
-        print("Score: " + str(self.score) + "pts @ " + self.place)
+        print("Score: " + str(self.score) + "pts @ " + str(self.place))
         if self.affiliation:
             print("Affiliation: " + self.affiliation + ", " + self.country)
         if self.website:
@@ -268,7 +277,7 @@ class user:
         for solve in solves:
             res = {}
             if solve["team"] is not None:
-                res["team"] = team(solve["team"], self.__sess, self.__url)
+                res["team"] = team(solve["team"], self.__session, self.__url)
             res["date"] = solve["date"]
             res["type"] = solve["type"]
 
@@ -300,7 +309,7 @@ class teams:
         if type(key) == str:
             result = None
             for x in self.__tlist:
-                if key == x.name:
+                if key.lower() == x.name.lower():
                     result = x
         return result
 
@@ -404,7 +413,10 @@ class challenges:
         return str(out)
 
     def add(self, chall):
-        new_chall = challenge(chall, self.__sess, self.__url)
+        if type(chall) == challenge:
+            new_chall = chall
+        else:
+            new_chall = challenge(chall, self.__sess, self.__url)
         self.__clist.append(new_chall)
         if new_chall.category not in self.__categories:
             self.__categories.append(new_chall.category)
@@ -414,9 +426,9 @@ class challenges:
             return self.__categories
         else:
             c_in_cat = challenges(self.__sess, self.__url)
-            for challenge in self.__clist:
-                if search in challenge.category:
-                    c_in_cat.add(challenge)
+            for chall in self.__clist:
+                if search in chall.category:
+                    c_in_cat.add(chall)
             return c_in_cat
 
 
@@ -458,7 +470,7 @@ class challenge:
 
     def view(self):
         print("=> " + self.name + "\t\t" + "(" + self.category + ")")
-        if self.__loaded == False:
+        if self.__isloaded == False:
             self.load()
         print("Description:\n\t\t" + self.description)
         if len(self.files) > 0:
@@ -473,11 +485,12 @@ class challenge:
         resp = self.__sess.get(
             self.__url+"/api/v1/challenges/"+str(self.__id)+"/solves")
         solves = resp.json()["data"]
-        result=[]
+        result = []
         for solve in solves:
-            res={}
+            res = {}
             if "user" in solve["account_url"]:
-                res["user"] = user(solve["account_id"], self.__sess, self.__url)
+                res["user"] = user(solve["account_id"],
+                                   self.__sess, self.__url)
             else:
                 res["team"] = team(
                     solve["account_id"], self.__sess, self.__url)
@@ -486,14 +499,20 @@ class challenge:
         return result
 
     def get_token(self):
-        resp = self.__sess.get(self.url+"/challenges")
-        return resp.text.split('csrf_nonce = "')[1].split('"')[0]
+        resp = self.__sess.get(self.__url+"/challenges")
+        try:
+            csrf = resp.text.split('csrf_nonce = "')[1].split('"')[0]
+        except IndexError:
+            csrf = resp.text.split("csrfNonce': \"")[1].split('"')[0]
+        return csrf
+
 
     def submit(self, flag):
-        csrf = get_token()
+        csrf = self.get_token()
         resp = self.__sess.post(self.__url+"api/v1/challenges/attempt",
-                json={"challenge_id": self.__id, "submission": flag},
-                headers={"CSRF-Token": csrf},)
+                                json={"challenge_id": self.__id,
+                                      "submission": flag},
+                                headers={"CSRF-Token": csrf},)
         if resp.status_code != 200:
             print("Something Went Wrong")
         if resp.json()["data"]["status"] == "correct":
