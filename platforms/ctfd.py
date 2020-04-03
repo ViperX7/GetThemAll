@@ -261,20 +261,23 @@ class user:
             print("Website:" + self.website)
 
     def solves(self):
-        resp = self.__sess.get(
+        resp = self.__session.get(
             self.__url+"/api/v1/users/"+str(self.__id)+"/solves")
         solves = resp.json()["data"]
+        result = []
         for solve in solves:
+            res = {}
             if solve["team"] is not None:
-                result["team"] = team(solve["team"], self.__sess, self.__url)
-            result["date"] = solve["date"]
-            result["type"] = solve["correct"]
+                res["team"] = team(solve["team"], self.__sess, self.__url)
+            res["date"] = solve["date"]
+            res["type"] = solve["type"]
 
             solve["challenge"]["id"] = solve["challenge_id"]
             solve["challenge"]["tags"] = None
             solve["challenge"]["type"] = None
-            result["challenge"] = challenge(
+            res["challenge"] = challenge(
                 solve["challenge"], self.__session, self.__url)
+            result.append(res)
         return result
 
 
@@ -467,14 +470,19 @@ class challenge:
             print(t, end=", ")
 
     def solves(self):
-        resp = self.__sess.get(self.__url+"/api/v1/challenges/"+str(self.__id))
+        resp = self.__sess.get(
+            self.__url+"/api/v1/challenges/"+str(self.__id)+"/solves")
         solves = resp.json()["data"]
+        result=[]
         for solve in solves:
+            res={}
             if "user" in solve["account_url"]:
-                result["user"] = user(solve["account_id"], self.__sess, self.__url)
+                res["user"] = user(solve["account_id"], self.__sess, self.__url)
             else:
-                result["team"] = team(solve["account_id"], self.__sess, self.__url)
-            result["date"] = solve["date"]
+                res["team"] = team(
+                    solve["account_id"], self.__sess, self.__url)
+            res["date"] = solve["date"]
+            result.append(res)
         return result
 
 
@@ -483,12 +491,13 @@ sectf.creds({"user": username, "email": email, "pass": password})
 sectf.auth()
 sectf.scoreboard()
 print()
-team = sectf.teams()["YESS"]
-print(team.country)
-team.load()
-team.members[0].load()
-print(team.members)
+ch = sectf.challenges()["API-only XSS"]
+print(ch.solves()[0]["user"].view())
 
+# team.load()
+# team.members[0].load()
+# print(team.members)
+#
 
 # sectf.users()
 # print(sectf.email)
