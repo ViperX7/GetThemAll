@@ -485,6 +485,21 @@ class challenge:
             result.append(res)
         return result
 
+    def get_token(self):
+        resp = self.__sess.get(self.url+"/challenges")
+        return resp.text.split('csrf_nonce = "')[1].split('"')[0]
+
+    def submit(self, flag):
+        csrf = get_token()
+        resp = self.__sess.post(self.__url+"api/v1/challenges/attempt",
+                json={"challenge_id": self.__id, "submission": flag},
+                headers={"CSRF-Token": csrf},)
+        if resp.status_code != 200:
+            print("Something Went Wrong")
+        if resp.json()["data"]["status"] == "correct":
+            return True
+        else:
+            return False
 
 sectf = CTFd(URL)
 sectf.creds({"user": username, "email": email, "pass": password})
