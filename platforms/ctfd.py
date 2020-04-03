@@ -110,14 +110,16 @@ class CTFd:
                      "password": self.password, "nonce": nonce}
 
         print("[*] Authenticating " + self.url, end="")
-        resp = s.post(
-            self.url+"/login", data=loginData)
+        resp = s.post(self.url+"/login", data=loginData)
         if resp.ok:
             print("\tAuthenticated\r[+]")
         elif resp.status_code == 403:
             if "has ended" in resp.text:
                 print("\tAuthenticated\r[+]")
                 print("\t[*] Seems Like CTF has ended")
+            elif "not started" in resp.text:
+                print("\tAuthenticated\r[+]")
+                print("\t[*] Seems Like you are early CTF not started yet")
         else:
             print("\tFailed\r[-]")
             print(resp.status_code)
@@ -131,6 +133,14 @@ class CTFd:
         data = resp.json()['data']
         self.username = data['name']
         self.email = data['email']
+
+    def scoreboard(self, upto=0):
+        resp = self.session.get(self.url + "api/v1/scoreboard")
+        entry = resp.json()["data"]
+        print("\t\tPlace\t\t\tName\t\t\t\tScore\n")
+        for x in entry:
+            print("\t\t" + str(x["pos"]) + "\t\t\t" +
+                  x["name"] + "\t\t\t\t" + str(x["score"]))
 
     def users(self, search=None):
         if self.__users == None:
@@ -174,6 +184,7 @@ class users:
         self.__ulist.append(new_user)
 
     def __getitem__(self, key):
+        result = None
         if type(key) == int:
             result = self.__ulist[key]
         if type(key) == str:
@@ -249,6 +260,23 @@ class user:
         if self.website:
             print("Website:" + self.website)
 
+    def solves(self):
+        resp = self.__sess.get(
+            self.__url+"/api/v1/users/"+str(self.__id)+"/solves")
+        solves = resp.json()["data"]
+        for solve in solves:
+            if solve["team"] is not None:
+                result["team"] = team(solve["team"], self.__sess, self.__url)
+            result["date"] = solve["date"]
+            result["type"] = solve["correct"]
+
+            solve["challenge"]["id"] = solve["challenge_id"]
+            solve["challenge"]["tags"] = None
+            solve["challenge"]["type"] = None
+            result["challenge"] = challenge(
+                solve["challenge"], self.__session, self.__url)
+        return result
+
 
 class teams:
     def __init__(self, session, url):
@@ -267,6 +295,7 @@ class teams:
         if type(key) == int:
             result = self.__tlist[key]
         if type(key) == str:
+            result = None
             for x in self.__tlist:
                 if key == x.name:
                     result = x
@@ -359,6 +388,7 @@ class challenges:
         if type(key) == int:
             result = self.__clist[key]
         if type(key) == str:
+            result = None
             for x in self.__clist:
                 if key == x.name:
                     result = x
@@ -436,15 +466,29 @@ class challenge:
         for t in self.tags:
             print(t, end=", ")
 
-    def keys(self):
-        return ["name", "category", "description", "tags", "value", "solves"]
+    def solves(self):
+        resp = self.__sess.get(self.__url+"/api/v1/challenges/"+str(self.__id))
+        solves = resp.json()["data"]
+        for solve in solves:
+            if "user" in solve["account_url"]:
+                result["user"] = user(solve["account_id"], self.__sess, self.__url)
+            else:
+                result["team"] = team(solve["account_id"], self.__sess, self.__url)
+            result["date"] = solve["date"]
+        return result
 
 
 sectf = CTFd(URL)
 sectf.creds({"user": username, "email": email, "pass": password})
 sectf.auth()
+sectf.scoreboard()
 print()
-sectf.teams()[1].view()
+team = sectf.teams()["YESS"]
+print(team.country)
+team.load()
+team.members[0].load()
+print(team.members)
+
 
 # sectf.users()
 # print(sectf.email)
@@ -455,10 +499,9 @@ sectf.teams()[1].view()
 
 
 # "/api/v1/users/me"
-# "/api/v1/teams/me"
-# "/api/v1/challenges"
-# "/api/v1/scoreboard"
 # "/api/v1/users/me/solves"
+# "/api/v1/teams/me"
 # "/api/v1/scoreboard"
 # "/api/v1/challenges/"+challid
 # "/api/v1/challenges/attempt"
+# "/api/v1/challenges"
