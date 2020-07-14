@@ -55,7 +55,7 @@ class CTFd:
         if not data:
             print("Please Login To Get Current Status")
             return
-        if context == None:
+        if context is None:
             print("Username: " + data['name'])
             print("Score   : " + str(data['score']))
             print("Place   : " + str(data['place']))
@@ -77,7 +77,7 @@ class CTFd:
         elif 'email' in authdata:
             self.email = authdata['email']
         else:
-            print("You Have To Provide Either The Registered Username or Email")
+            print("You Must To Provide The Registered Username or Email")
             exit()
         if 'pass' in authdata:
             self.password = authdata['pass']
@@ -85,10 +85,13 @@ class CTFd:
             print("Please provide the password")
             exit()
 
-    def login(self, suthdata):
+    # A way to provide authentication data after the ctfd object is created
+    # Or Login with another Account
+    def login(self, authdata):
         self.creds(authdata)
         self.auth()
 
+    # Authenticate user and perform some checks
     def auth(self):
         s = self.session
         if self.username:
@@ -132,6 +135,8 @@ class CTFd:
             exit(1)
         self.sync()
 
+    # Get all the information about the user
+    # TODO get all the information and use a user object to store this info
     def sync(self):
         s = self.session
         resp = s.get(self.url+"/api/v1/users/me")
@@ -143,13 +148,18 @@ class CTFd:
     def scoreboard(self, upto=0):
         resp = self.session.get(self.url + "api/v1/scoreboard")
         entry = resp.json()["data"]
+        self.__scoreboard = entry
         print("\t\tPlace\t\t\tName\t\t\t\tScore\n")
         for x in entry:
             print("\t\t" + str(x["pos"]) + "\t\t\t" +
                   x["name"] + "\t\t\t\t" + str(x["score"]))
 
+##############################################################################
+# Challenges, Teams, and Users are cached after the first request
+# so subsequent call to these methods only returns the cached requests
+##############################################################################
     def users(self, search=None):
-        if self.__users == None:
+        if self.__users is None:
             resp = self.session.get(self.url + "/api/v1/users")
             usrs = resp.json()['data']
             self.__users = users(self.session, self.url)
@@ -158,9 +168,10 @@ class CTFd:
         return self.__users
 
     def challenges(self):
-        if self.isstarted == False:
+        # If CTF not started no challenges can be fetched so return blank list
+        if self.isstarted is False:
             return []
-        if self.__challenges == None:
+        if self.__challenges is None:
             self.__challenges = challenges(self.session, self.url)
             resp = self.session.get(self.url+"/api/v1/challenges")
             prblms = resp.json()["data"]
@@ -169,13 +180,14 @@ class CTFd:
         return self.__challenges
 
     def teams(self):
-        if self.__teams == None:
+        if self.__teams is None:
             self.__teams = teams(self.session, self.url)
             resp = self.session.get(self.url+"/api/v1/teams")
             tems = resp.json()["data"]
             for tem in tems:
                 self.__teams.add(tem)
         return self.__teams
+##############################################################################
 
 
 class users:
@@ -201,9 +213,12 @@ class users:
                 if key.lower() == x.name.lower():
                     print("\t\t\t Found\r[+]")
                     result = x
-        if result == None:
+        if result is None:
             print("\t\t\t Not Found\r[-]")
         return result
+
+    def __repr__(self):
+        return self.__str__()
 
     def __str__(self):
         out = []
@@ -257,8 +272,11 @@ class user:
         self.place = prop["place"]
         self.isloaded = True
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
-        if self.name == None:
+        if self.name is None:
             self.load()
         return str(self.name)
 
@@ -315,6 +333,9 @@ class teams:
                 if key.lower() == x.name.lower():
                     result = x
         return result
+
+    def __repr__(self):
+        return self.__str__()
 
     def __str__(self):
         out = []
@@ -373,8 +394,11 @@ class team:
         self.place = prop["place"]
         self.isloaded = True
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
-        if self.name == None:
+        if self.name is None:
             self.load()
         return str(self.name)
 
@@ -409,6 +433,9 @@ class challenges:
                     result = x
         return result
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
         out = []
         for x in self.__clist:
@@ -425,7 +452,7 @@ class challenges:
             self.__categories.append(new_chall.category)
 
     def category(self, search=None):
-        if search == None:
+        if search is None:
             return self.__categories
         else:
             c_in_cat = challenges(self.__sess, self.__url)
@@ -450,8 +477,11 @@ class challenge:
             self.__id = prop
         self.__isloaded = False
 
+    def __repr__(self):
+        return self.__str__()
+
     def __str__(self):
-        if self.name == None:
+        if self.name is None:
             self.load()
         return self.name
 
@@ -473,7 +503,7 @@ class challenge:
 
     def view(self):
         print("=> " + self.name + "\t\t" + "(" + self.category + ")")
-        if self.__isloaded == False:
+        if self.__isloaded is False:
             self.load()
         print("Description:\n\t\t" + self.description)
         if len(self.files) > 0:
@@ -484,6 +514,7 @@ class challenge:
         for t in self.tags:
             print(t, end=", ")
 
+    # TODO Check if in conflict with self.solves
     def solves(self):
         resp = self.__sess.get(
             self.__url+"/api/v1/challenges/"+str(self.__id)+"/solves")
@@ -501,7 +532,7 @@ class challenge:
             result.append(res)
         return result
 
-    def get_token(self):
+    def __get_token(self):
         resp = self.__sess.get(self.__url+"/challenges")
         try:
             csrf = resp.text.split('csrf_nonce = "')[1].split('"')[0]
@@ -510,7 +541,7 @@ class challenge:
         return csrf
 
     def submit(self, flag):
-        csrf = self.get_token()
+        csrf = self.__get_token()
         resp = self.__sess.post(self.__url+"api/v1/challenges/attempt",
                                 json={"challenge_id": self.__id,
                                       "submission": flag},
