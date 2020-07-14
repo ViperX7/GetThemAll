@@ -76,12 +76,18 @@ def prepare(name, Readme, category='.', files='', conn=''):
         if category not in os.listdir():
             os.mkdir(category)
         os.chdir(category)
-    name = name.replace(' ', '_').lower()
+    dir_name = name.replace(' ', '_').lower()
     banned_chars = ['/']
     for char in banned_chars:
-        name.replace(char, '-')
-    os.mkdir(name)
-    os.chdir(name)
+        dir_name.replace(char, '-')
+    try:
+        os.mkdir(dir_name)
+    except:
+        return
+    os.chdir(dir_name)
+
+    with open('.challenge_name', 'w') as identifire:
+        identifire.write(name)
 
     # Netcat connections mannagement
     if conn:
