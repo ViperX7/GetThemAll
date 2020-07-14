@@ -6,9 +6,9 @@ import json
 import argparse
 import re
 import sys
-from config import *
+# from config import *
 
-os.system('clear')
+# os.system('clear')
 
 
 class ConnError(Exception):
@@ -27,7 +27,10 @@ class CTFd:
         self.url = url
         # Create a session
         self.session = requests.session()
-        # Checking Connection
+        self.session.headers.update(
+            {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0'})
+
+       # Checking Connection
         print("[*] Checking Connection to " + self.url, end="")
         resp = self.session.get(self.url)
         if resp.ok:
@@ -155,7 +158,7 @@ class CTFd:
         return self.__users
 
     def challenges(self):
-        if self.isstarted== False:
+        if self.isstarted == False:
             return []
         if self.__challenges == None:
             self.__challenges = challenges(self.session, self.url)
@@ -506,7 +509,6 @@ class challenge:
             csrf = resp.text.split("csrfNonce': \"")[1].split('"')[0]
         return csrf
 
-
     def submit(self, flag):
         csrf = self.get_token()
         resp = self.__sess.post(self.__url+"api/v1/challenges/attempt",
@@ -520,14 +522,15 @@ class challenge:
         else:
             return False
 
-sectf = CTFd(URL)
-sectf.creds({"user": username, "email": email, "pass": password})
-sectf.auth()
-sectf.scoreboard()
-print()
-ch = sectf.challenges()["API-only XSS"]
-print(ch.solves()[0]["user"].view())
-
+#
+# sectf = CTFd(URL)
+# sectf.creds({"user": username, "email": email, "pass": password})
+# sectf.auth()
+# sectf.scoreboard()
+# print()
+# ch = sectf.challenges()["API-only XSS"]
+# print(ch.solves()[0]["user"].view())
+#
 # team.load()
 # team.members[0].load()
 # print(team.members)
