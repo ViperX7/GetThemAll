@@ -28,7 +28,7 @@ class CTFd:
         # Create a session
         self.session = requests.session()
         self.session.headers.update(
-            {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0'})
+            {'User-Agent': 'Mozilla/5.1 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0'})
 
        # Checking Connection
         print("[*] Checking Connection to " + self.url, end="")
@@ -104,7 +104,13 @@ class CTFd:
         if resp.ok:
             print("\tSuccess\r[+]")
             print("\t[*] CSRF Token : ", end="")
-            nonce = resp.text.split('name="nonce" value="')[1].split('"')[0]
+            try:
+                nonce = resp.text.split('name="nonce" value="')[
+                    1].split('"')[0]
+            except:
+                nonce = resp.text.split('name="nonce" type="hidden" value="')[
+                    1].split('"')[0]
+
             if len(nonce) % 64 == 0:
                 print("\tok\r\t[+]")
             else:
@@ -120,7 +126,10 @@ class CTFd:
         resp = s.post(self.url+"/login", data=loginData)
         self.isstarted = True
         if resp.ok:
-            print("\tAuthenticated\r[+]")
+            if "incorrect" in resp.text:
+                print("\Incorrect login details\r[+]")
+            else:
+                print("\tAuthenticated\r[+]")
         elif resp.status_code == 403:
             if "has ended" in resp.text:
                 print("\tAuthenticated\r[+]")
@@ -158,11 +167,23 @@ class CTFd:
 # Challenges, Teams, and Users are cached after the first request
 # so subsequent call to these methods only returns the cached requests
 ##############################################################################
-    def users(self, search=None):
-        if self.__users is None:
+    def users(self, reload=False):
+        if self.__users is None or reload:
+            self.__users = users(self.session, self.url)
             resp = self.session.get(self.url + "/api/v1/users")
             usrs = resp.json()['data']
-            self.__users = users(self.session, self.url)
+            try:
+                pages = resp.json()["meta"]["pagination"]["pages"]
+            except KeyError:
+                pages = 1
+            for x in range(2, pages+1):
+                print('[ + ] Scanning page : ' + str(x), end="\r")
+                resp = self.session.get(self.url+"/api/v1/teams?page="+str(x))
+                try:
+                    usrs += resp.json()["data"]
+                except KeyError:
+                    print(resp.text)
+
             for user in usrs:
                 self.__users.add(user)
         return self.__users
@@ -174,16 +195,26 @@ class CTFd:
         if self.__challenges is None:
             self.__challenges = challenges(self.session, self.url)
             resp = self.session.get(self.url+"/api/v1/challenges")
+            print(resp.text)
             prblms = resp.json()["data"]
             for prblm in prblms:
                 self.__challenges.add(prblm)
         return self.__challenges
 
-    def teams(self):
-        if self.__teams is None:
+    def teams(self, reload=False):
+        if self.__teams is None or reload:
             self.__teams = teams(self.session, self.url)
             resp = self.session.get(self.url+"/api/v1/teams")
             tems = resp.json()["data"]
+            try:
+                pages = resp.json()["meta"]["pagination"]["pages"]
+            except KeyError:
+                pages = 1
+                pass
+            for x in range(2, pages+1):
+                resp = self.session.get(self.url+"/api/v1/teams?page="+str(x))
+                tems += resp.json()["data"]
+
             for tem in tems:
                 self.__teams.add(tem)
         return self.__teams
@@ -344,16 +375,16 @@ class teams:
         return str(out)
 
     def find(self, search):
-        output = users(self.__session, self.__url)
-        for user in self.__tlist:
-            if search.lower() in user.name.lower():
-                output.add(user)
-            elif user.affiliation and search.lower() in user.affiliation:
-                output.add(user)
-            elif user.website and search.lower() in user.website.lower():
-                output.add(user)
-            elif user.country and search.lower() in user.country.lower():
-                output.add(user)
+        output = teams(self.__session, self.__url)
+        for team in self.__tlist:
+            if search.lower() in team.name.lower():
+                output.add(team)
+            elif team.affiliation and search.lower() in team.affiliation:
+                output.add(team)
+            elif team.website and search.lower() in team.website.lower():
+                output.add(team)
+            elif team.country and search.lower() in team.country.lower():
+                output.add(team)
         return output
 
 
