@@ -1,10 +1,6 @@
 from creds import *
-import ctfd
-import helper
-import os
-
-os.system("clear")
-
+from GetThemAll.platforms import ctfd
+from GetThemAll.tools import helper
 
 auctf = ctfd.CTFd(URL, {"pass": password, "user": username})
 auctf.auth()
@@ -42,7 +38,7 @@ for challenge in challenges:
     #     conn = ''
     if challenge.files:
         for file in challenge.files:
-            files.append(URL+file)
+            files.append(URL + file)
     else:
         files = []
     if challenge.category:
@@ -64,7 +60,7 @@ for challenge in challenges:
 
     conn = ""
     links = ""
-    Readme = helper.genWriteup(
-        name, conn, files, desc, category, points, links, tags)
+    Readme = helper.genWriteup(name, conn, files, desc, category, points,
+                               links, tags)
     helper.prepare(name, Readme, category, files, conn)
     print("making")

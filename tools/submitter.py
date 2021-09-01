@@ -1,5 +1,5 @@
 #!/bin/python
-import ctfd
+from GetThemAll.platforms import ctfd
 from creds import *
 import os
 
@@ -18,5 +18,3 @@ if res:
     print("\r[ + ] " + identifier + ": " + flag + " Accepted        ", end="")
 else:
     print("\r[ - ] " + identifier + ": " + flag + " Rejected       ", end="")
-
-
