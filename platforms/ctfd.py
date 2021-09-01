@@ -398,7 +398,11 @@ class team:
             self.website = prop["website"]
             self.affiliation = prop["affiliation"]
             self.country = prop["country"]
-            self.captain = user(prop["captain_id"], self.__session, self.__url)
+            if prop["captain_id"] != None:
+                self.captain = user(prop["captain_id"], self.__session, self.__url)
+            else:
+                self.captain = None
+
 
         else:
             self.__id = prop
