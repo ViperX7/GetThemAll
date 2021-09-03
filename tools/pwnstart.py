@@ -15,7 +15,6 @@ while not os.path.isfile('creds.py'):
 if True:
     from writeupMgr.utils import fread
     creds = fread('creds.py')
-    print(creds)
     exec(creds)
     ctf = pwncollege.pwncollege(URL, {"pass": password, "user": username})
     ctf.auth()

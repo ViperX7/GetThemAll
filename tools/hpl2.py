@@ -1,7 +1,6 @@
 from creds import *
 from writeupMgr.writeup import Writeup
 from GetThemAll.platforms import ctfd
-from GetThemAll.tools import helper
 
 auctf = ctfd.CTFd(URL, {"pass": password, "user": username})
 auctf.auth()
@@ -65,6 +64,7 @@ for challenge in challenges:
     #                            links, tags)
     echall = challenge.export()
     echall.init_chall()
-    Readme = Writeup(challenge.export())
+    echall.save()
+    Readme = Writeup(echall)
     # helper.prepare(name, Readme, category, files, conn)
     print("making")
