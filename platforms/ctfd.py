@@ -144,6 +144,14 @@ class CTFd:
             exit(1)
         self.sync()
 
+    def get_token(self):
+        resp = self.session.get(self.url + "/challenges")
+        try:
+            csrf = resp.text.split('csrf_nonce = "')[1].split('"')[0]
+        except IndexError:
+            csrf = resp.text.split("csrfNonce': \"")[1].split('"')[0]
+        return csrf
+
     # Get all the information about the user
     # TODO get all the information and use a user object to store this info
     def sync(self):
@@ -197,7 +205,7 @@ class CTFd:
         if self.__challenges is None:
             self.__challenges = challenges(self.session, self.url)
             resp = self.session.get(self.url + "/api/v1/challenges")
-            print(resp.text)
+            # print(resp.text)
             prblms = resp.json()["data"]
             for prblm in prblms:
                 self.__challenges.add(prblm)
@@ -620,9 +628,15 @@ class challenge:
 
         data["flag"] = "NA"
         data['urls'] = []
-        data['files'] = self.files
+        data['files'] = []
+        for file in self.files:
+            data['files'].append({
+                'name':
+                __import__('writeupMgr').utils.fname4url(self.__url + file),
+                'url':
+                self.__url + file
+            })
         data['tags'] = self.tags
-
         return Chall.from_dict(data)
 
     def create(self):
