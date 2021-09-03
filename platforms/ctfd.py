@@ -1,11 +1,6 @@
 #!/bin/env python3
 
-import os
 import requests
-import json
-import argparse
-import re
-import sys
 # from config import *
 
 # os.system('clear')
@@ -27,10 +22,12 @@ class CTFd:
         self.url = url
         # Create a session
         self.session = requests.session()
-        self.session.headers.update(
-            {'User-Agent': 'Mozilla/5.1 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0'})
+        self.session.headers.update({
+            'User-Agent':
+            'Mozilla/5.1 (Windows NT 10.0; Win64; x64; rv:76.0) Gecko/20100101 Firefox/76.0'
+        })
 
-       # Checking Connection
+        # Checking Connection
         print("[*] Checking Connection to " + self.url, end="")
         resp = self.session.get(self.url)
         if resp.ok:
@@ -39,7 +36,7 @@ class CTFd:
             print("\tFailed\r[-]")
             print("[?] Are you sure the URL to the CTF is correct")
             print("\tAlso check weater connection is available")
-            print("[X] "+str(resp.status_code))
+            print("[X] " + str(resp.status_code))
             exit(1)
         self.__challenges = None
         self.__users = None
@@ -49,7 +46,7 @@ class CTFd:
 
     def info(self, context=None):
         s = self.session
-        resp = s.get(self.url+"/api/v1/users/me")
+        resp = s.get(self.url + "/api/v1/users/me")
         data = resp.json()['data']
 
         if not data:
@@ -100,16 +97,16 @@ class CTFd:
             identifier = self.email
 
         print("[*] Loading login page " + self.url, end="")
-        resp = s.get(self.url+"/login")
+        resp = s.get(self.url + "/login")
         if resp.ok:
             print("\tSuccess\r[+]")
             print("\t[*] CSRF Token : ", end="")
             try:
-                nonce = resp.text.split('name="nonce" value="')[
-                    1].split('"')[0]
+                nonce = resp.text.split('name="nonce" value="')[1].split(
+                    '"')[0]
             except:
-                nonce = resp.text.split('name="nonce" type="hidden" value="')[
-                    1].split('"')[0]
+                nonce = resp.text.split(
+                    'name="nonce" type="hidden" value="')[1].split('"')[0]
 
             if len(nonce) % 64 == 0:
                 print("\tok\r\t[+]")
@@ -119,11 +116,14 @@ class CTFd:
             print("\tFailed\r[-]")
             exit(1)
 
-        loginData = {"name": identifier,
-                     "password": self.password, "nonce": nonce}
+        loginData = {
+            "name": identifier,
+            "password": self.password,
+            "nonce": nonce
+        }
 
         print("[*] Authenticating " + self.url, end="")
-        resp = s.post(self.url+"/login", data=loginData)
+        resp = s.post(self.url + "/login", data=loginData)
         self.isstarted = True
         if resp.ok:
             if "incorrect" in resp.text:
@@ -148,7 +148,7 @@ class CTFd:
     # TODO get all the information and use a user object to store this info
     def sync(self):
         s = self.session
-        resp = s.get(self.url+"/api/v1/users/me")
+        resp = s.get(self.url + "/api/v1/users/me")
         # print(resp.text)
         data = resp.json()['data']
         self.username = data['name']
@@ -160,13 +160,14 @@ class CTFd:
         self.__scoreboard = entry
         print("\t\tPlace\t\t\tName\t\t\t\tScore\n")
         for x in entry:
-            print("\t\t" + str(x["pos"]) + "\t\t\t" +
-                  x["name"] + "\t\t\t\t" + str(x["score"]))
+            print("\t\t" + str(x["pos"]) + "\t\t\t" + x["name"] + "\t\t\t\t" +
+                  str(x["score"]))
 
 ##############################################################################
 # Challenges, Teams, and Users are cached after the first request
 # so subsequent call to these methods only returns the cached requests
 ##############################################################################
+
     def users(self, reload=False):
         if self.__users is None or reload:
             self.__users = users(self.session, self.url)
@@ -176,9 +177,10 @@ class CTFd:
                 pages = resp.json()["meta"]["pagination"]["pages"]
             except KeyError:
                 pages = 1
-            for x in range(2, pages+1):
+            for x in range(2, pages + 1):
                 print('[ + ] Scanning page : ' + str(x), end="\r")
-                resp = self.session.get(self.url+"/api/v1/teams?page="+str(x))
+                resp = self.session.get(self.url + "/api/v1/teams?page=" +
+                                        str(x))
                 try:
                     usrs += resp.json()["data"]
                 except KeyError:
@@ -194,7 +196,7 @@ class CTFd:
             return []
         if self.__challenges is None:
             self.__challenges = challenges(self.session, self.url)
-            resp = self.session.get(self.url+"/api/v1/challenges")
+            resp = self.session.get(self.url + "/api/v1/challenges")
             print(resp.text)
             prblms = resp.json()["data"]
             for prblm in prblms:
@@ -204,20 +206,23 @@ class CTFd:
     def teams(self, reload=False):
         if self.__teams is None or reload:
             self.__teams = teams(self.session, self.url)
-            resp = self.session.get(self.url+"/api/v1/teams")
+            resp = self.session.get(self.url + "/api/v1/teams")
             tems = resp.json()["data"]
             try:
                 pages = resp.json()["meta"]["pagination"]["pages"]
             except KeyError:
                 pages = 1
                 pass
-            for x in range(2, pages+1):
-                resp = self.session.get(self.url+"/api/v1/teams?page="+str(x))
+            for x in range(2, pages + 1):
+                resp = self.session.get(self.url + "/api/v1/teams?page=" +
+                                        str(x))
                 tems += resp.json()["data"]
 
             for tem in tems:
                 self.__teams.add(tem)
         return self.__teams
+
+
 ##############################################################################
 
 
@@ -292,7 +297,8 @@ class user:
         self.isloaded = False
 
     def load(self):
-        resp = self.__session.get(self.__url+"/api/v1/users/"+str(self.__id))
+        resp = self.__session.get(self.__url + "/api/v1/users/" +
+                                  str(self.__id))
         prop = resp.json()["data"]
         self.name = prop["name"]
         self.website = prop["website"]
@@ -322,8 +328,8 @@ class user:
             print("Website:" + self.website)
 
     def solves(self):
-        resp = self.__session.get(
-            self.__url+"/api/v1/users/"+str(self.__id)+"/solves")
+        resp = self.__session.get(self.__url + "/api/v1/users/" +
+                                  str(self.__id) + "/solves")
         solves = resp.json()["data"]
         result = []
         for solve in solves:
@@ -336,8 +342,8 @@ class user:
             solve["challenge"]["id"] = solve["challenge_id"]
             solve["challenge"]["tags"] = None
             solve["challenge"]["type"] = None
-            res["challenge"] = challenge(
-                solve["challenge"], self.__session, self.__url)
+            res["challenge"] = challenge(solve["challenge"], self.__session,
+                                         self.__url)
             result.append(res)
         return result
 
@@ -399,10 +405,10 @@ class team:
             self.affiliation = prop["affiliation"]
             self.country = prop["country"]
             if prop["captain_id"] != None:
-                self.captain = user(prop["captain_id"], self.__session, self.__url)
+                self.captain = user(prop["captain_id"], self.__session,
+                                    self.__url)
             else:
                 self.captain = None
-
 
         else:
             self.__id = prop
@@ -414,7 +420,8 @@ class team:
         self.isloaded = False
 
     def load(self):
-        resp = self.__session.get(self.__url+"/api/v1/teams/"+str(self.__id))
+        resp = self.__session.get(self.__url + "/api/v1/teams/" +
+                                  str(self.__id))
         prop = resp.json()["data"]
         self.name = prop["name"]
         self.website = prop["website"]
@@ -524,7 +531,8 @@ class challenge:
         return getattr(self, key)
 
     def load(self):
-        resp = self.__sess.get(self.__url+"/api/v1/challenges/"+str(self.__id))
+        resp = self.__sess.get(self.__url + "/api/v1/challenges/" +
+                               str(self.__id))
         chall = resp.json()["data"]
         self.category = chall["category"]
         self.name = chall["name"]
@@ -551,24 +559,24 @@ class challenge:
 
     # TODO Check if in conflict with self.solves
     def solves(self):
-        resp = self.__sess.get(
-            self.__url+"/api/v1/challenges/"+str(self.__id)+"/solves")
+        resp = self.__sess.get(self.__url + "/api/v1/challenges/" +
+                               str(self.__id) + "/solves")
         solves = resp.json()["data"]
         result = []
         for solve in solves:
             res = {}
             if "user" in solve["account_url"]:
-                res["user"] = user(solve["account_id"],
-                                   self.__sess, self.__url)
+                res["user"] = user(solve["account_id"], self.__sess,
+                                   self.__url)
             else:
-                res["team"] = team(
-                    solve["account_id"], self.__sess, self.__url)
+                res["team"] = team(solve["account_id"], self.__sess,
+                                   self.__url)
             res["date"] = solve["date"]
             result.append(res)
         return result
 
     def __get_token(self):
-        resp = self.__sess.get(self.__url+"/challenges")
+        resp = self.__sess.get(self.__url + "/challenges")
         try:
             csrf = resp.text.split('csrf_nonce = "')[1].split('"')[0]
         except IndexError:
@@ -577,16 +585,78 @@ class challenge:
 
     def submit(self, flag):
         csrf = self.__get_token()
-        resp = self.__sess.post(self.__url+"api/v1/challenges/attempt",
-                                json={"challenge_id": self.__id,
-                                      "submission": flag},
-                                headers={"CSRF-Token": csrf},)
+        resp = self.__sess.post(
+            self.__url + "api/v1/challenges/attempt",
+            json={
+                "challenge_id": self.__id,
+                "submission": flag
+            },
+            headers={"CSRF-Token": csrf},
+        )
         if resp.status_code != 200:
             print("Something Went Wrong")
         if resp.json()["data"]["status"] == "correct":
             return True
         else:
             return False
+
+    def export(self):
+        self.load() if not self.__isloaded else None
+        from writeupMgr.chall import Chall
+
+        data = {}
+        conn = {}
+        data['name'] = self.name
+        data['id'] = self.__id
+        data['desc'] = self.description
+        data['points'] = self.value
+        data['difficulty'] = None
+        data['category'] = self.category
+        data['img'] = None
+
+        conn['host'], conn['port'], conn['passwd'] = [None] * 3
+        conn['type'] = None
+        data['conn'] = conn
+
+        data["flag"] = "NA"
+        data['urls'] = []
+        data['files'] = self.files
+        data['tags'] = self.tags
+
+        return Chall.from_dict(data)
+
+    def create(self):
+        self.load() if not self.__isloaded else None
+        from writeupMgr.chall import Chall
+
+        data = {}
+        conn = {}
+        data['name'] = self.name
+        data['id'] = self.__id
+        data['desc'] = self.description
+        data['points'] = self.value
+        data['difficulty'] = None
+        data['category'] = self.category
+        data['img'] = None
+
+        conn['host'], conn['port'], conn['passwd'] = [None] * 3
+        conn['type'] = None
+        data['conn'] = conn
+
+        data["flag"] = "NA"
+        data['urls'] = []
+        data['files'] = []
+        for file in self.files:
+            ffillee = {
+                "name": file.split("/")[-1],
+                "url": file,
+                "source": None
+            }
+            data['files'].append(ffillee)
+        data['tags'] = self.tags
+
+        return Chall.from_dict(data)
+
 
 #
 # sectf = CTFd(URL)
@@ -606,9 +676,7 @@ class challenge:
 # print(sectf.email)
 # print(s.get(URL+"/api/v1/users/me").text)
 
-
 # auth(URL,username, password)
-
 
 # "/api/v1/users/me"
 # "/api/v1/users/me/solves"
