@@ -144,6 +144,10 @@ class CTFd:
             exit(1)
         self.sync()
 
+    def submit(self, challenge_id, flag):
+        chall = challenge(challenge_id, self.session, self.url)
+        return chall.submit(flag)
+
     def get_token(self):
         resp = self.session.get(self.url + "/challenges")
         try:
@@ -187,7 +191,7 @@ class CTFd:
                 pages = 1
             for x in range(2, pages + 1):
                 print('[ + ] Scanning page : ' + str(x), end="\r")
-                resp = self.session.get(self.url + "/api/v1/teams?page=" +
+                resp = self.session.get(self.url + "/api/v1/users?page=" +
                                         str(x))
                 try:
                     usrs += resp.json()["data"]
@@ -294,6 +298,7 @@ class user:
             self.website = prop["website"]
             self.affiliation = prop["affiliation"]
             self.country = prop["country"]
+            self.bracket = prop["bracket"]
 
         else:
             self.__id = prop
@@ -312,6 +317,7 @@ class user:
         self.website = prop["website"]
         self.affiliation = prop["affiliation"]
         self.country = prop["country"]
+        self.bracket = prop["bracket"]
 
         self.score = prop["score"]
         self.place = prop["place"]
